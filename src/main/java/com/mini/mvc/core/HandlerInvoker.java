@@ -27,7 +27,7 @@ public class HandlerInvoker {
         List<Object> paramList = Lists.newArrayList();
         ParamsUtil.parseRequestParams(paramList, request, method.getParameterTypes());
         Object result = ReflectUtil.invokeMethod(controller.getControllerClass(), method, paramList);
-        log.debug("返回结果： {}" + JSON.toJSONString(result));
+        log.debug("返回结果： {}", JSON.toJSONString(result));
         ViewResolver.view(response, result, controller);
     }
 }

@@ -24,7 +24,7 @@ import java.io.IOException;
  *         1. init -->初始化需要扫描所有的controller
  *         2. 根据url信息 匹配对应的方法并返回
  */
-@WebServlet(urlPatterns = "/*", loadOnStartup = 0)
+@WebServlet(urlPatterns = "/mini-mvc/*", loadOnStartup = 0)
 public class DispatcherServlet extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(DispatcherServlet.class);
@@ -46,6 +46,13 @@ public class DispatcherServlet extends HttpServlet {
         RequestMethod requestMethod = RequestMethod.getRequestMethod(method);
         String requestPath = PathUtil.getRequestPath(req);
         log.debug("[mini mvc] {} : {}", requestMethod, requestPath);
+
+        // 默认路径，跳转index.html
+        if (PathUtil.DEFAULT_REQUEST_PATH.equals(requestPath)) {
+            PathUtil.redirectRequest(Config.DEFAULT_HOME_PATH, req, resp);
+            return;
+        }
+
         RequestBody requestBody = new RequestBody(requestMethod, requestPath);
         ControllerBody controller = ControllerCollection.getControllerBody(requestBody);
         if (controller == null) {
