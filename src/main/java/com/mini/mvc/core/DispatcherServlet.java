@@ -24,7 +24,7 @@ import java.io.IOException;
  *         1. init -->初始化需要扫描所有的controller
  *         2. 根据url信息 匹配对应的方法并返回
  */
-@WebServlet(urlPatterns = "/mini-mvc/*", loadOnStartup = 0)
+@WebServlet(urlPatterns = "/", loadOnStartup = 1)
 public class DispatcherServlet extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(DispatcherServlet.class);
@@ -32,7 +32,7 @@ public class DispatcherServlet extends HttpServlet {
     /**
      * 扫描controller
      *
-     * @throws ServletException
+     * @throws ServletException 初始化异常
      */
     @Override
     public void init() throws ServletException {

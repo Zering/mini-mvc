@@ -16,7 +16,7 @@ public class HelloController {
 
     private static final Logger log = LoggerFactory.getLogger(HelloController.class);
 
-    @RequestMapping(value = "/mini-mvc/hello", produces = MediaType.TEXT_PLAIN_UTF_8)
+    @RequestMapping(value = "/hello", produces = MediaType.TEXT_PLAIN_UTF_8)
     public String hello(String name) {
         log.debug("Welcome : " + name);
         return "Welcome : " + name;
