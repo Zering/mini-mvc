@@ -2,11 +2,15 @@ package com.sample.entity;
 
 /**
  * Created by zhanghaojie on 2017/10/19.
+ *
+ * 用户信息
  */
 public class User {
 
     private String name;
     private int age;
+    // 反馈信息
+    private String callback;
 
     public String getName() {
         return name;
@@ -24,8 +28,11 @@ public class User {
         this.age = age;
     }
 
-    @Override
-    public String toString() {
-        return "User{" + "name='" + name + '\'' + ", age=" + age + '}';
+    public String getCallback() {
+        return callback;
+    }
+
+    public void setCallback(String callback) {
+        this.callback = callback;
     }
 }
