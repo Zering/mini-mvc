@@ -5,13 +5,15 @@ import java.lang.annotation.Annotation;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 /**
@@ -47,6 +49,20 @@ public class ClassUtil {
     private static final String CLASS_SUFFIX = ".class";
 
     /**
+     * jar文件后缀
+     */
+    private static final String JAR_SUFFIX = ".jar";
+
+    /**
+     * 内部类识别符号
+     */
+    private static final String INNER_CLASS_IDENTIFY = "$";
+    /**
+     * jar包识别
+     */
+    private static final String JAR_IDENTIFY = "!";
+
+    /**
      * 获取包下被特定注解的所有类
      *
      * @param scanPackage 被扫描的包
@@ -60,7 +76,7 @@ public class ClassUtil {
     public static List<Class<?>> getClassLists(String scanPackage) {
         List<Class<?>> classList = Lists.newArrayList();
         try {
-            Enumeration<URL> resources = getCurrentClassLoader().getResources(scanPackage.replace(PACKAGE_PATH_SPLITE, DIR_PATH_SPLITE));
+            Enumeration<URL> resources = getCurrentClassLoader().getResources("com/sample/controller");
             while (resources.hasMoreElements()) {
                 URL url = resources.nextElement();
                 String protocol = url.getProtocol();
@@ -68,8 +84,10 @@ public class ClassUtil {
                     String packagePath = url.getPath().replaceAll("%20", " ");
                     // 递归添加class文件
                     addClass(classList, packagePath, scanPackage);
+                } else if (RESOURCE_TYPE_JAR.equals(protocol)) {
+                    //                    String packagePath = url.getPath().replaceAll("%20", " ");
+                    //                    addJarClass(classList, packagePath, scanPackage);
                 }
-                // TODO 解析包下的jar包
             }
 
         } catch (Exception e) {
@@ -80,6 +98,40 @@ public class ClassUtil {
     }
 
     /**
+     * TODO 解析第三方jar包
+     *
+     * @param classList
+     * @param path
+     * @param basePackage
+     */
+    private static void addJarClass(List<Class<?>> classList, String path, String basePackage) {
+        try {
+            String[] jarInfo = path.split(JAR_IDENTIFY);
+            String jarFilePath = jarInfo[0].substring(jarInfo[0].indexOf(DIR_PATH_SPLITE));
+            String packagePath = jarInfo[1].substring(1);
+            File file = new File(jarFilePath);
+            String jarPath = file.toURI().getPath();
+            JarFile jar = new JarFile(file);
+
+            Enumeration<JarEntry> entries = jar.entries();
+            while (entries.hasMoreElements()) {
+                JarEntry jarEntry = entries.nextElement();
+                String jarpathname = jarEntry.getName(); // 类型 sun/xx/xxx.class
+                if (validateClassName(jarpathname)) {
+                    String className = jarpathname.replace(DIR_PATH_SPLITE, PACKAGE_PATH_SPLITE).substring(0, jarpathname.lastIndexOf("."));
+                    if (StringUtils.isNotBlank(path)) {
+                        className = jarPath + PACKAGE_PATH_SPLITE + className;
+                    }
+                    Class<?> clazz = loadClass(className);
+                    classList.add(clazz);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * 递归添加 path下的所有class文件
      *
      * @param classList
@@ -87,8 +139,11 @@ public class ClassUtil {
      * @param basePackage 类所在的包路径
      */
     private static void addClass(List<Class<?>> classList, String path, String basePackage) {
-        // 只取class文件和子包
-        File[] files = new File(path).listFiles(file -> (file.isFile() && file.getName().endsWith(CLASS_SUFFIX)) || file.isDirectory());
+        // 只取class文件(排除内部类)和子包
+        File[] files = new File(path).listFiles(file -> (checkLegalClass(file)) || file.isDirectory());
+        if (files == null || files.length == 0) {
+            return;
+        }
         for (File file : files) {
             String fileName = file.getName();
             if (file.isFile()) {
@@ -114,6 +169,27 @@ public class ClassUtil {
                 addClass(classList, subPath, subPackage);
             }
         }
+    }
+
+    /**
+     * 筛选合法的类文件 --> class结尾且不是内部类
+     *
+     * @return
+     */
+    private static boolean checkLegalClass(File file) {
+        System.out.println(file.getName());
+        return file.isFile() && validateClassName(file.getName());
+    }
+
+    /**
+     * 验证类名
+     *
+     * @param classname
+     * @return
+     */
+    private static boolean validateClassName(String classname) {
+        Preconditions.checkNotNull(classname);
+        return classname.endsWith(CLASS_SUFFIX) && !classname.contains(INNER_CLASS_IDENTIFY);
     }
 
     private static Class<?> loadClass(String classname) {
